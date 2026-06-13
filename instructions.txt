@@ -1,0 +1,77 @@
+!--   Folder structure   --!
+
+src folder on the root folder and then we have these folders in the src folder
+
+* api
+* app
+* components
+* constants
+* hooks
+* screens
+* utils
+* assets
+* entity
+* services
+* store
+
+!--   components   --!
+
+for every component creattion we first need to check that if the component exist then we need to use that component
+else we need to create a reuseable component in the components folder and we need to default export the component.
+And we need to create the compnent like this
+
+src->components->my-component->MyComponent.tsx
+
+we need to use the props for the components Creation
+
+!--   screens   --!
+
+We need to use the screens folder for the screens i.e if we need to create the login screen then we need to create the
+login screen in the screens folder like this i.else
+
+src->screens-login->Login.tsx
+
+and make sure the routes works well for both android and the ios as well
+
+!--   store   --!
+
+We need use the redux for the app if we need then we will use the store folder for the redux integration
+
+!--   hooks   --!
+
+We need to use the hooks folder for the hooks creation our custom and default hooks will be placed here
+
+!--   utils   --!
+
+We need to use the utils folder for the utilities
+
+!--   services   --!
+
+We need to use the services folder for the third party services if we use in our application
+
+!--   assets   --!
+
+We will use the assets folder for the images like this i.e
+
+src->assets->images->image-name.png
+
+!--   entity   --!
+
+We will use the entity folder for the forms data i.e we have the login form then we will use the user entity like
+this
+
+src->entity->user.entity.ts
+
+and then we will use the default values and the requried values using the yup schema
+
+
+!--   General Instructions   --!
+
+We need to use the formik and yup schema for the form values
+
+!--   Form Creation   --!
+
+For the form values we will create a one component for the input field which we will use for all the things i.e
+
+we will create a component with name base-input->BaseInput.tsx in the components folder and then we will use that
+base input to every user name and other data that we need to get from the user and same for the button
