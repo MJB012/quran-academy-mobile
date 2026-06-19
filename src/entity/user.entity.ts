@@ -1,41 +1,5 @@
 import * as Yup from 'yup';
 
-import { UserRole } from '@/enums/user-role.enum';
-
-export interface DemoCredential {
-  email: string;
-  password: string;
-  role: UserRole;
-  name: string;
-}
-
-export const DEMO_CREDENTIALS: DemoCredential[] = [
-  {
-    email: 'student@gmail.com',
-    password: '123456',
-    role: UserRole.STUDENT,
-    name: 'Ahmed Ali',
-  },
-  {
-    email: 'teacher@gmail.com',
-    password: '123456',
-    role: UserRole.TEACHER,
-    name: 'Sheikh Muhammad Ibrahim',
-  },
-];
-
-export function matchDemoCredentials(
-  email: string,
-  password: string,
-): DemoCredential | null {
-  const normalized = email.trim().toLowerCase();
-  return (
-    DEMO_CREDENTIALS.find(
-      (c) => c.email === normalized && c.password === password,
-    ) ?? null
-  );
-}
-
 export const EMAIL_REGEX =
   /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -153,7 +117,6 @@ export const teacherSignupValidationSchema = Yup.object({
 });
 
 export const OTP_LENGTH = 6;
-export const DEMO_OTP = '123456';
 
 export interface ForgotPasswordFormValues {
   email: string;
@@ -180,12 +143,7 @@ export const otpValidationSchema: Yup.ObjectSchema<OtpFormValues> = Yup.object({
   code: Yup.string()
     .required('Please enter the verification code')
     .length(OTP_LENGTH, `Code must be ${OTP_LENGTH} digits`)
-    .matches(/^\d+$/, 'Code must contain only digits')
-    .test(
-      'matches-demo',
-      'Invalid verification code',
-      (value) => value === DEMO_OTP,
-    ),
+    .matches(/^\d+$/, 'Code must contain only digits'),
 });
 
 export interface ResetPasswordFormValues {
@@ -205,8 +163,6 @@ export const resetPasswordValidationSchema: Yup.ObjectSchema<ResetPasswordFormVa
       .min(6, 'Password must be at least 6 characters'),
     confirmPassword: confirmPasswordField,
   });
-
-export const DEMO_CURRENT_PASSWORD = '123456';
 
 export interface EditProfileFormValues {
   firstName: string;
@@ -235,13 +191,7 @@ export const changePasswordInitialValues: ChangePasswordFormValues = {
 
 export const changePasswordValidationSchema: Yup.ObjectSchema<ChangePasswordFormValues> =
   Yup.object({
-    currentPassword: Yup.string()
-      .required('Current password is required')
-      .test(
-        'is-current',
-        'Current password is incorrect',
-        (value) => value === DEMO_CURRENT_PASSWORD,
-      ),
+    currentPassword: Yup.string().required('Current password is required'),
     newPassword: Yup.string()
       .required('New password is required')
       .min(6, 'Password must be at least 6 characters')

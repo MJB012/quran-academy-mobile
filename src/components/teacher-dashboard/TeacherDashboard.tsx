@@ -1,7 +1,20 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import {
+  BookingsService,
+  NotificationsService,
+  bookingPartyName,
+  type Booking,
+} from '@/api';
 import Avatar from '@/components/avatar/Avatar';
 import BaseButton from '@/components/base-button/BaseButton';
 import DashboardHeader from '@/components/dashboard-header/DashboardHeader';
@@ -15,14 +28,6 @@ export interface TeacherDashboardProps {
   profileComplete?: boolean;
 }
 
-interface Stat {
-  id: string;
-  label: string;
-  value: string;
-  icon: 'person.2.fill' | 'star.fill' | 'dollarsign.circle.fill' | 'clock.fill';
-  tint: string;
-}
-
 interface UpcomingSession {
   id: string;
   studentName: string;
@@ -31,67 +36,32 @@ interface UpcomingSession {
   duration: string;
 }
 
-const STATS: Stat[] = [
-  {
-    id: 'students',
-    label: 'Students',
-    value: '24',
-    icon: 'person.2.fill',
-    tint: '#0FA678',
-  },
-  {
-    id: 'rating',
-    label: 'Rating',
-    value: '4.9',
-    icon: 'star.fill',
-    tint: '#F59E0B',
-  },
-  {
-    id: 'earnings',
-    label: 'Earnings',
-    value: '$1,240',
-    icon: 'dollarsign.circle.fill',
-    tint: '#10B981',
-  },
-  {
-    id: 'hours',
-    label: 'Hours',
-    value: '86',
-    icon: 'clock.fill',
-    tint: '#8B5CF6',
-  },
-];
+function formatSessionTime(iso: string, timeSlot: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  const dayLabel = sameDay(date, now)
+    ? 'Today'
+    : sameDay(date, tomorrow)
+      ? 'Tomorrow'
+      : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${dayLabel}, ${timeSlot}`;
+}
 
-const UPCOMING_SESSIONS: UpcomingSession[] = [
-  {
-    id: '1',
-    studentName: 'Ahmed Ali',
-    subject: 'Tajweed',
-    time: 'Today, 4:00 PM',
-    duration: '60 min',
-  },
-  {
-    id: '2',
-    studentName: 'Sarah Khan',
-    subject: 'Memorization',
-    time: 'Today, 6:30 PM',
-    duration: '45 min',
-  },
-  {
-    id: '3',
-    studentName: 'Yusuf Ibrahim',
-    subject: 'Arabic Grammar',
-    time: 'Tomorrow, 10:00 AM',
-    duration: '60 min',
-  },
-  {
-    id: '4',
-    studentName: 'Fatima Noor',
-    subject: 'Tafseer',
-    time: 'Tomorrow, 2:00 PM',
-    duration: '90 min',
-  },
-];
+function toUpcomingSession(b: Booking): UpcomingSession {
+  return {
+    id: b.id,
+    studentName: bookingPartyName(b.studentId) || 'Student',
+    subject: b.subject,
+    time: formatSessionTime(b.date, b.timeSlot),
+    duration: `${b.durationMins} min`,
+  };
+}
 
 function TeacherDashboard({
   userName = 'Teacher',
@@ -103,11 +73,43 @@ function TeacherDashboard({
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const showBanner = !profileComplete && !bannerDismissed;
 
+  const [sessions, setSessions] = useState<UpcomingSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    BookingsService.list()
+      .then((bookings) => {
+        if (!active) return;
+        setSessions(
+          bookings
+            .filter((b) => b.status !== 'cancelled' && b.status !== 'completed')
+            .map(toUpcomingSession),
+        );
+      })
+      .catch(() => {
+        if (active) setSessions([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    NotificationsService.unreadCount()
+      .then((count) => {
+        if (active) setUnreadCount(count);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}>
       <DashboardHeader
         userName={userName}
-        notificationCount={2}
+        notificationCount={unreadCount}
         onNotificationsPress={() =>
           router.push({
             pathname: '/notifications',
@@ -130,10 +132,21 @@ function TeacherDashboard({
       />
 
       <FlatList
-        data={UPCOMING_SESSIONS}
+        data={sessions}
         keyExtractor={(s) => s.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            {loading ? (
+              <ActivityIndicator color={palette.tint} />
+            ) : (
+              <Text style={[styles.emptyText, { color: palette.textMuted }]}>
+                No upcoming sessions yet.
+              </Text>
+            )}
+          </View>
+        }
         ListHeaderComponent={
           <View>
             {showBanner ? (
@@ -203,38 +216,6 @@ function TeacherDashboard({
               </View>
             ) : null}
 
-            <View style={styles.statsGrid}>
-              {STATS.map((stat) => (
-                <View
-                  key={stat.id}
-                  style={[
-                    styles.statCard,
-                    {
-                      backgroundColor: palette.surface,
-                      borderColor: palette.border,
-                      shadowColor: scheme === 'dark' ? '#000' : '#0F766E',
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.statIcon,
-                      { backgroundColor: `${stat.tint}22` },
-                    ]}
-                  >
-                    <IconSymbol name={stat.icon} size={20} color={stat.tint} />
-                  </View>
-                  <Text style={[styles.statValue, { color: palette.text }]}>
-                    {stat.value}
-                  </Text>
-                  <Text
-                    style={[styles.statLabel, { color: palette.textMuted }]}
-                  >
-                    {stat.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
             <Text style={[styles.sectionTitle, { color: palette.tint }]}>
               Upcoming Sessions
             </Text>
@@ -349,45 +330,17 @@ const styles = StyleSheet.create({
   bannerBtn: {
     alignSelf: 'flex-start',
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  statCard: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    padding: Spacing.md,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  empty: {
+    paddingVertical: Spacing.xl,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
   },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
+  emptyText: {
+    fontSize: 14,
   },
   sectionTitle: {
     fontSize: 22,
     fontWeight: '800',
-    marginTop: Spacing.md,
+    marginTop: Spacing.lg,
     marginBottom: Spacing.md,
   },
   sessionCard: {

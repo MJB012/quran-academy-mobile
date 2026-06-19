@@ -1,12 +1,23 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// On Android emulator localhost = 10.0.2.2; iOS simulator can use localhost.
-// Override at runtime by setting EXPO_PUBLIC_API_URL in your env.
-const ENV_URL = process.env.EXPO_PUBLIC_API_URL?.trim();
+// Base URL resolution order:
+//   1. EXPO_PUBLIC_API_URL  (inlined at build time when set)
+//   2. BACKEND_URL from .env (forwarded through app.config.js -> extra.backendUrl)
+//   3. Platform-aware localhost default (Android emulator uses 10.0.2.2)
+const extra = (Constants.expoConfig?.extra ?? {}) as { backendUrl?: string | null };
+
+const CONFIGURED_URL = (process.env.EXPO_PUBLIC_API_URL ?? extra.backendUrl ?? '').trim();
 
 function defaultBaseUrl(): string {
   if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
   return 'http://localhost:3000';
 }
 
-export const API_BASE_URL = ENV_URL && ENV_URL.length > 0 ? ENV_URL : defaultBaseUrl();
+// Strip trailing slashes so `${baseURL}/auth/login` never doubles up.
+function normalize(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+export const API_BASE_URL =
+  CONFIGURED_URL.length > 0 ? normalize(CONFIGURED_URL) : defaultBaseUrl();

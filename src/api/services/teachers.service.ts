@@ -10,6 +10,18 @@ export interface TeacherOnboardingInput {
   bio?: string;
 }
 
+/** Shape returned by GET /teachers/me (null when the teacher hasn't onboarded). */
+export interface TeacherProfileData {
+  specializations: string[];
+  languages: string[];
+  qualification?: string;
+  hourlyRate: number;
+  bio?: string;
+  avgRating: number;
+  studentsCount: number;
+  isOnboarded: boolean;
+}
+
 interface ListResponse {
   items: Teacher[];
   total: number;
@@ -38,7 +50,7 @@ export const TeachersService = {
     return unwrap(api.post('/teachers/onboarding', input));
   },
 
-  async myProfile() {
-    return unwrap(api.get('/teachers/me'));
+  async myProfile(): Promise<TeacherProfileData | null> {
+    return unwrap<TeacherProfileData | null>(api.get('/teachers/me'));
   },
 };

@@ -1,7 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StatusBar } from 'react-native';
 
+import { TokenStore } from '@/api';
+import type { StoredUser } from '@/api/token-store';
 import StudentDashboard from '@/components/student-dashboard/StudentDashboard';
 import TeacherDashboard from '@/components/teacher-dashboard/TeacherDashboard';
 import { Colors } from '@/constants/theme';
@@ -17,9 +19,25 @@ function Dashboard() {
     profileComplete?: string;
   }>();
 
-  const role = useMemo(() => parseUserRole(params.role), [params.role]);
-  const userName =
-    params.name ?? (role === UserRole.TEACHER ? 'Teacher' : 'Ahmed Ali');
+  const [user, setUser] = useState<StoredUser | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    TokenStore.getUser().then((u) => {
+      if (active && u) setUser(u);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const role = useMemo(
+    () => parseUserRole(user?.role ?? params.role),
+    [user?.role, params.role],
+  );
+  const userName = user
+    ? `${user.firstName} ${user.lastName}`.trim()
+    : (params.name ?? undefined);
   const profileComplete = params.profileComplete !== 'false';
 
   return (

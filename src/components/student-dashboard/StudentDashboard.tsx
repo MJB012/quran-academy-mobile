@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { TeachersService } from '@/api';
+import { NotificationsService, TeachersService } from '@/api';
 import BaseInput from '@/components/base-input/BaseInput';
 import DashboardHeader from '@/components/dashboard-header/DashboardHeader';
 import TeacherCard, { Teacher } from '@/components/teacher-card/TeacherCard';
@@ -17,6 +17,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Spacing } from '@/constants/theme';
 import { UserRole } from '@/enums/user-role.enum';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTeachersRealtime } from '@/hooks/use-teachers-realtime';
 
 export interface StudentDashboardProps {
   userName?: string;
@@ -30,24 +31,35 @@ function StudentDashboard({ userName = 'Student' }: StudentDashboardProps) {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadTeachers = useCallback(async () => {
+    try {
+      const res = await TeachersService.list();
+      setAllTeachers(res.items);
+    } catch {
+      setAllTeachers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    TeachersService.list()
-      .then((res) => {
-        if (active) setAllTeachers(res.items);
+    loadTeachers();
+    NotificationsService.unreadCount()
+      .then((count) => {
+        if (active) setUnreadCount(count);
       })
-      .catch(() => {
-        if (active) setAllTeachers([]);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .catch(() => {});
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadTeachers]);
+
+  // Live updates: refetch whenever a verified teacher's availability changes.
+  useTeachersRealtime(loadTeachers);
 
   const teachers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -69,7 +81,7 @@ function StudentDashboard({ userName = 'Student' }: StudentDashboardProps) {
     <View style={[styles.container, { backgroundColor: palette.background }]}>
       <DashboardHeader
         userName={userName}
-        notificationCount={1}
+        notificationCount={unreadCount}
         onNotificationsPress={() =>
           router.push({
             pathname: '/notifications',

@@ -17,7 +17,7 @@ import Avatar from '@/components/avatar/Avatar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Radii, Spacing } from '@/constants/theme';
 import { useWebRTCCall } from '@/hooks/use-webrtc-call';
-import { StubSignalingClient } from '@/services/signaling/StubSignalingClient';
+import { WebSocketSignalingClient } from '@/services/signaling/WebSocketSignalingClient';
 
 function formatElapsed(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -39,12 +39,12 @@ function JoinSessionImpl() {
     userId?: string;
   }>();
 
-  const sessionId = params.sessionId ?? 'demo-session';
+  const sessionId = params.sessionId ?? 'default-session';
   const counterpartName = params.counterpartName ?? 'Your peer';
   const subject = params.subject ?? '';
   const userId = params.userId ?? `user-${Math.random().toString(36).slice(2, 8)}`;
 
-  const signalingClient = useMemo(() => new StubSignalingClient(), []);
+  const signalingClient = useMemo(() => new WebSocketSignalingClient(), []);
 
   const {
     localStream,

@@ -236,19 +236,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     lineHeight: 20,
   },
-  demoNotice: {
-    borderWidth: 1,
-    borderRadius: Radii.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  demoText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 1,
-  },
   form: { width: '100%' },
   submit: { marginTop: Spacing.sm },
   resendRow: {

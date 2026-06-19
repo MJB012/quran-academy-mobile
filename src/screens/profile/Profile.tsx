@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StatusBar, StyleSheet, View } from 'react-native';
 
+import { AuthService, TokenStore, UsersService } from '@/api';
+import type { StoredUser } from '@/api/token-store';
 import ScreenHeader from '@/components/screen-header/ScreenHeader';
 import StudentProfile from '@/components/student-profile/StudentProfile';
 import TeacherProfile from '@/components/teacher-profile/TeacherProfile';
@@ -15,13 +17,38 @@ function Profile() {
   const router = useRouter();
   const params = useLocalSearchParams<{ role?: string; name?: string }>();
 
-  const role = useMemo(() => parseUserRole(params.role), [params.role]);
-  const isTeacher = role === UserRole.TEACHER;
-  const userName =
-    params.name ?? (isTeacher ? 'Sheikh Muhammad Ibrahim' : 'Ahmed Ali');
-  const email = isTeacher ? 'teacher@gmail.com' : 'student@gmail.com';
+  const [user, setUser] = useState<StoredUser | null>(null);
 
-  const onLogout = () => router.replace('/login');
+  useEffect(() => {
+    let active = true;
+    // Show the cached user immediately, then refresh from the backend.
+    TokenStore.getUser().then((u) => {
+      if (active && u) setUser(u);
+    });
+    UsersService.me()
+      .then((u) => {
+        if (active) setUser(u);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const role = useMemo(
+    () => parseUserRole(user?.role ?? params.role),
+    [user?.role, params.role],
+  );
+  const isTeacher = role === UserRole.TEACHER;
+  const userName = user
+    ? `${user.firstName} ${user.lastName}`.trim()
+    : (params.name ?? '');
+  const email = user?.email ?? '';
+
+  const onLogout = async () => {
+    await AuthService.logout();
+    router.replace('/login');
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}>

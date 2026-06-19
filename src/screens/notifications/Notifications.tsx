@@ -28,7 +28,7 @@ import ScreenHeader, {
 } from '@/components/screen-header/ScreenHeader';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Radii, Spacing } from '@/constants/theme';
-import { UserRole, parseUserRole } from '@/enums/user-role.enum';
+import { parseUserRole } from '@/enums/user-role.enum';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type NotifIcon =
@@ -74,92 +74,6 @@ function toLocalNotification(n: ApiNotification): Notification {
     unread: !n.readAt,
   };
 }
-
-const _STUDENT_NOTIFICATIONS_UNUSED: Notification[] = [
-  {
-    id: 's1',
-    icon: 'calendar.badge.clock',
-    tint: '#0FA678',
-    title: 'Upcoming session',
-    message:
-      'Your Tajweed session with Sheikh Muhammad Ibrahim starts in 30 minutes. Please join 5 minutes early to test your microphone and camera. The session will cover Makharij al-Huruf and common pronunciation pitfalls. Bring your notes from last week.',
-    time: '30m ago',
-    unread: true,
-  },
-  {
-    id: 's2',
-    icon: 'checkmark.circle.fill',
-    tint: '#10B981',
-    title: 'Payment successful',
-    message:
-      'Your payment of $25 for the Tajweed course was successful. The receipt has been emailed to student@gmail.com. You can access your full payment history in the Profile section.',
-    time: '2h ago',
-    unread: true,
-  },
-  {
-    id: 's3',
-    icon: 'person.fill',
-    tint: '#8B5CF6',
-    title: 'New teacher joined',
-    message:
-      'Ustadha Fatima Ahmed just joined Quran Academy. She holds a Master\'s in Quranic Sciences and specializes in Memorization, Tajweed, and Quranic Arabic. Check out her profile to see her availability and book your first session.',
-    time: '1d ago',
-    unread: false,
-  },
-  {
-    id: 's4',
-    icon: 'envelope.fill',
-    tint: '#3B82F6',
-    title: 'Welcome to Quran Academy',
-    message:
-      'Assalamu Alaikum and welcome to Quran Academy! Complete your profile to get personalized teacher recommendations based on your goals, preferred languages, and availability. We are excited to be part of your learning journey.',
-    time: '3d ago',
-    unread: false,
-  },
-];
-
-const _TEACHER_NOTIFICATIONS_UNUSED: Notification[] = [
-  {
-    id: 't1',
-    icon: 'person.fill',
-    tint: '#0FA678',
-    title: 'New session request',
-    message:
-      'Ahmed Ali has requested a 60-minute Tajweed session for tomorrow at 4:00 PM. He is a beginner focusing on Makharij al-Huruf and basic pronunciation. Please accept or suggest an alternative time within the next 2 hours.',
-    time: '15m ago',
-    unread: true,
-  },
-  {
-    id: 't2',
-    icon: 'calendar.badge.clock',
-    tint: '#8B5CF6',
-    title: 'Upcoming session',
-    message:
-      'Your session with Sarah Khan starts in 1 hour. She is currently memorizing Surah Al-Mulk and asked you to focus on verses 15-22 in this session. Session duration: 45 minutes.',
-    time: '30m ago',
-    unread: true,
-  },
-  {
-    id: 't3',
-    icon: 'star.fill',
-    tint: '#F59E0B',
-    title: 'New 5-star review',
-    message:
-      'Yusuf Ibrahim left you a 5-star review: "Excellent teacher, very patient and knowledgeable. Explains complex Tajweed rules in a simple way and is always well-prepared for each session." Your overall rating is now 4.9.',
-    time: '2h ago',
-    unread: false,
-  },
-  {
-    id: 't4',
-    icon: 'creditcard.fill',
-    tint: '#10B981',
-    title: 'Payment received',
-    message:
-      'You received a payment of $50 from Fatima Noor for two 30-minute sessions. Funds will be deposited to your connected bank account within 2-3 business days.',
-    time: '1d ago',
-    unread: false,
-  },
-];
 
 function Notifications() {
   const scheme = useColorScheme() ?? 'light';

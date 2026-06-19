@@ -18,49 +18,6 @@ export interface StudentProfileProps {
   onLogout?: () => void;
 }
 
-interface Stat {
-  id: string;
-  label: string;
-  value: string;
-  icon:
-    | 'book.fill'
-    | 'clock.fill'
-    | 'checkmark.circle.fill'
-    | 'star.fill';
-  tint: string;
-}
-
-const STATS: Stat[] = [
-  {
-    id: 'courses',
-    label: 'Courses',
-    value: '4',
-    icon: 'book.fill',
-    tint: '#0FA678',
-  },
-  {
-    id: 'hours',
-    label: 'Hours',
-    value: '36',
-    icon: 'clock.fill',
-    tint: '#8B5CF6',
-  },
-  {
-    id: 'completed',
-    label: 'Completed',
-    value: '12',
-    icon: 'checkmark.circle.fill',
-    tint: '#10B981',
-  },
-  {
-    id: 'streak',
-    label: 'Day Streak',
-    value: '7',
-    icon: 'star.fill',
-    tint: '#F59E0B',
-  },
-];
-
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { firstName: '', lastName: '' };
@@ -73,7 +30,7 @@ function splitName(name: string): { firstName: string; lastName: string } {
 
 function StudentProfile({
   userName,
-  email = 'student@gmail.com',
+  email = '',
   onLogout,
 }: StudentProfileProps) {
   const scheme = useColorScheme() ?? 'light';
@@ -166,34 +123,6 @@ function StudentProfile({
           </Text>
         </View>
 
-        <View style={styles.statsGrid}>
-          {STATS.map((stat) => (
-            <View
-              key={stat.id}
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: palette.surface,
-                  borderColor: palette.border,
-                  shadowColor: scheme === 'dark' ? '#000' : '#0F766E',
-                },
-              ]}
-            >
-              <View
-                style={[styles.statIcon, { backgroundColor: `${stat.tint}22` }]}
-              >
-                <IconSymbol name={stat.icon} size={20} color={stat.tint} />
-              </View>
-              <Text style={[styles.statValue, { color: palette.text }]}>
-                {stat.value}
-              </Text>
-              <Text style={[styles.statLabel, { color: palette.textMuted }]}>
-                {stat.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-
         <View
           style={[
             styles.infoCard,
@@ -210,31 +139,6 @@ function StudentProfile({
           <InfoRow label="First Name" value={firstName} palette={palette} />
           <InfoRow label="Last Name" value={lastName} palette={palette} />
           <InfoRow label="Email" value={emailState} palette={palette} />
-          <InfoRow
-            label="Member Since"
-            value="March 2025"
-            palette={palette}
-          />
-        </View>
-
-        <View
-          style={[
-            styles.infoCard,
-            {
-              backgroundColor: palette.surface,
-              borderColor: palette.border,
-              shadowColor: scheme === 'dark' ? '#000' : '#0F766E',
-            },
-          ]}
-        >
-          <Text style={[styles.infoTitle, { color: palette.text }]}>
-            Learning Goals
-          </Text>
-          <View style={styles.chips}>
-            <BaseChip label="Memorize Surah Yaseen" variant="tint" size="md" />
-            <BaseChip label="Improve Tajweed" variant="tint" size="md" />
-            <BaseChip label="Learn Arabic" variant="tint" size="md" />
-          </View>
         </View>
 
         <BaseButton

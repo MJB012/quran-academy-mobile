@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { UsersService, getApiErrorMessage } from '@/api';
+import { TeachersService, UsersService, getApiErrorMessage } from '@/api';
 import Avatar from '@/components/avatar/Avatar';
 import BaseButton from '@/components/base-button/BaseButton';
 import BaseChip from '@/components/base-chip/BaseChip';
@@ -23,52 +23,6 @@ export interface TeacherProfileProps {
   onLogout?: () => void;
 }
 
-interface Stat {
-  id: string;
-  label: string;
-  value: string;
-  icon:
-    | 'person.2.fill'
-    | 'star.fill'
-    | 'dollarsign.circle.fill'
-    | 'clock.fill';
-  tint: string;
-}
-
-const STATS: Stat[] = [
-  {
-    id: 'students',
-    label: 'Students',
-    value: '24',
-    icon: 'person.2.fill',
-    tint: '#0FA678',
-  },
-  {
-    id: 'rating',
-    label: 'Rating',
-    value: '4.9',
-    icon: 'star.fill',
-    tint: '#F59E0B',
-  },
-  {
-    id: 'earnings',
-    label: 'Earnings',
-    value: '$1,240',
-    icon: 'dollarsign.circle.fill',
-    tint: '#10B981',
-  },
-  {
-    id: 'hours',
-    label: 'Hours',
-    value: '86',
-    icon: 'clock.fill',
-    tint: '#8B5CF6',
-  },
-];
-
-const DEFAULT_SPECIALIZATIONS = ['Tajweed', 'Tafseer', 'Arabic Grammar'];
-const DEFAULT_LANGUAGES = ['Arabic', 'English', 'Urdu'];
-
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { firstName: '', lastName: '' };
@@ -81,7 +35,7 @@ function splitName(name: string): { firstName: string; lastName: string } {
 
 function TeacherProfile({
   userName,
-  email = 'teacher@gmail.com',
+  email = '',
   onLogout,
 }: TeacherProfileProps) {
   const scheme = useColorScheme() ?? 'light';
@@ -91,15 +45,17 @@ function TeacherProfile({
   const [firstName, setFirstName] = useState(initial.firstName);
   const [lastName, setLastName] = useState(initial.lastName);
   const [emailState, setEmailState] = useState(email);
-  const [specializations, setSpecializations] = useState<string[]>(
-    DEFAULT_SPECIALIZATIONS,
-  );
-  const [languages, setLanguages] = useState<string[]>(DEFAULT_LANGUAGES);
+  const [specializations, setSpecializations] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [qualification, setQualification] = useState('');
+  const [hourlyRate, setHourlyRate] = useState<number | null>(null);
+  const [bio, setBio] = useState('');
 
   const [editSheet, setEditSheet] = useState(false);
   const [passwordSheet, setPasswordSheet] = useState(false);
   const [specSheet, setSpecSheet] = useState(false);
   const [langSheet, setLangSheet] = useState(false);
+  const [savingExpertise, setSavingExpertise] = useState(false);
 
   useEffect(() => {
     setFirstName(initial.firstName);
@@ -110,7 +66,63 @@ function TeacherProfile({
     setEmailState(email);
   }, [email]);
 
+  // Load the teacher's saved profile (specializations, languages, etc.) from the API.
+  useEffect(() => {
+    let active = true;
+    TeachersService.myProfile()
+      .then((profile) => {
+        if (!active || !profile) return;
+        setSpecializations(profile.specializations ?? []);
+        setLanguages(profile.languages ?? []);
+        setQualification(profile.qualification ?? '');
+        setHourlyRate(
+          typeof profile.hourlyRate === 'number' ? profile.hourlyRate : null,
+        );
+        setBio(profile.bio ?? '');
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const fullName = `${firstName} ${lastName}`.trim();
+
+  // Persist specialization/language edits. The backend upsert requires a full
+  // profile, so we resend qualification + hourlyRate (loaded from /teachers/me).
+  const persistExpertise = async (next: {
+    specializations?: string[];
+    languages?: string[];
+  }) => {
+    if (savingExpertise) return;
+    const nextSpecs = next.specializations ?? specializations;
+    const nextLangs = next.languages ?? languages;
+    if (!qualification || hourlyRate == null) {
+      Alert.alert(
+        'Finish your profile first',
+        'Please complete your profile setup (qualification and hourly rate) before editing specializations or languages.',
+      );
+      return;
+    }
+    setSavingExpertise(true);
+    try {
+      await TeachersService.onboarding({
+        specializations: nextSpecs,
+        languages: nextLangs,
+        qualification,
+        hourlyRate,
+        bio: bio || undefined,
+      });
+      setSpecializations(nextSpecs);
+      setLanguages(nextLangs);
+      setSpecSheet(false);
+      setLangSheet(false);
+    } catch (err) {
+      Alert.alert('Could not save', getApiErrorMessage(err));
+    } finally {
+      setSavingExpertise(false);
+    }
+  };
 
   const handleSaveProfile = async (values: EditProfileFormValues) => {
     try {
@@ -160,38 +172,12 @@ function TeacherProfile({
           <Text style={[styles.name, { color: palette.text }]}>
             {fullName || 'Teacher'}
           </Text>
-          <Text style={[styles.qualification, { color: palette.textMuted }]}>
-            PhD in Islamic Studies
-          </Text>
+          {qualification ? (
+            <Text style={[styles.qualification, { color: palette.textMuted }]}>
+              {qualification}
+            </Text>
+          ) : null}
           <BaseChip label="Teacher" variant="tint" size="md" />
-        </View>
-
-        <View style={styles.statsGrid}>
-          {STATS.map((stat) => (
-            <View
-              key={stat.id}
-              style={[
-                styles.statCard,
-                {
-                  backgroundColor: palette.surface,
-                  borderColor: palette.border,
-                  shadowColor: scheme === 'dark' ? '#000' : '#0F766E',
-                },
-              ]}
-            >
-              <View
-                style={[styles.statIcon, { backgroundColor: `${stat.tint}22` }]}
-              >
-                <IconSymbol name={stat.icon} size={20} color={stat.tint} />
-              </View>
-              <Text style={[styles.statValue, { color: palette.text }]}>
-                {stat.value}
-              </Text>
-              <Text style={[styles.statLabel, { color: palette.textMuted }]}>
-                {stat.label}
-              </Text>
-            </View>
-          ))}
         </View>
 
         <View
@@ -218,12 +204,13 @@ function TeacherProfile({
           <InfoRow label="First Name" value={firstName} palette={palette} />
           <InfoRow label="Last Name" value={lastName} palette={palette} />
           <InfoRow label="Email" value={emailState} palette={palette} />
-          <InfoRow label="Hourly Rate" value="$25" palette={palette} />
-          <InfoRow
-            label="Member Since"
-            value="January 2024"
-            palette={palette}
-          />
+          {hourlyRate != null ? (
+            <InfoRow
+              label="Hourly Rate"
+              value={`$${hourlyRate}`}
+              palette={palette}
+            />
+          ) : null}
         </View>
 
         <View
@@ -326,10 +313,7 @@ function TeacherProfile({
         options={SPECIALIZATION_OPTIONS}
         initialValues={specializations}
         emptyError="Pick at least one specialization"
-        onSave={(v) => {
-          setSpecializations(v);
-          setSpecSheet(false);
-        }}
+        onSave={(v) => persistExpertise({ specializations: v })}
       />
 
       <EditChipsSheet
@@ -342,10 +326,7 @@ function TeacherProfile({
         options={LANGUAGE_OPTIONS}
         initialValues={languages}
         emptyError="Pick at least one language"
-        onSave={(v) => {
-          setLanguages(v);
-          setLangSheet(false);
-        }}
+        onSave={(v) => persistExpertise({ languages: v })}
       />
     </>
   );
