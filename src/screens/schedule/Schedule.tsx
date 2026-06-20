@@ -244,7 +244,7 @@ function Schedule() {
 
       <FlatList
         data={filtered}
-        keyExtractor={(s) => s.id}
+        keyExtractor={(s, i) => s.id ?? `session-${i}`}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
