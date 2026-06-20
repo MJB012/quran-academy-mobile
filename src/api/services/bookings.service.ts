@@ -48,6 +48,10 @@ export const BookingsService = {
     return unwrap<Booking>(api.get(`/bookings/${id}`));
   },
 
+  async confirm(id: string): Promise<Booking> {
+    return unwrap<Booking>(api.patch(`/bookings/${id}/confirm`));
+  },
+
   async cancel(id: string): Promise<Booking> {
     return unwrap<Booking>(api.patch(`/bookings/${id}/cancel`));
   },

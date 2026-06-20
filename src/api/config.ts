@@ -7,7 +7,8 @@ import { Platform } from 'react-native';
 //   3. Platform-aware localhost default (Android emulator uses 10.0.2.2)
 const extra = (Constants.expoConfig?.extra ?? {}) as { backendUrl?: string | null };
 
-const CONFIGURED_URL = (process.env.EXPO_PUBLIC_API_URL ?? extra.backendUrl ?? '').trim();
+const raw = process.env.EXPO_PUBLIC_API_URL ?? extra.backendUrl;
+const CONFIGURED_URL = typeof raw === 'string' ? raw.trim() : '';
 
 function defaultBaseUrl(): string {
   if (Platform.OS === 'android') return 'http://10.0.2.2:3000';

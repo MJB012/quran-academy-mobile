@@ -86,10 +86,15 @@ function BookSession() {
               return;
             }
             const total = (teacherPrice * values.duration) / 60;
+            const dateOnly = [
+              values.date.getFullYear(),
+              String(values.date.getMonth() + 1).padStart(2, '0'),
+              String(values.date.getDate()).padStart(2, '0'),
+            ].join('-');
             try {
               const booking = await BookingsService.create({
                 teacherId: params.teacherId,
-                date: values.date.toISOString(),
+                date: dateOnly,
                 timeSlot: values.timeSlot,
                 durationMins: values.duration,
                 subject: values.subject,
@@ -101,7 +106,7 @@ function BookSession() {
                   teacherId: params.teacherId,
                   teacherName,
                   teacherPrice: String(teacherPrice),
-                  date: values.date.toISOString(),
+                  date: dateOnly,
                   timeSlot: values.timeSlot,
                   duration: String(values.duration),
                   subject: values.subject,

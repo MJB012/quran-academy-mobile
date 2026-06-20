@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Formik } from 'formik';
 import React, { useRef } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { BookingsService, getApiErrorMessage } from '@/api';
 import BaseButton from '@/components/base-button/BaseButton';
 import BaseInput from '@/components/base-input/BaseInput';
 import ScreenHeader from '@/components/screen-header/ScreenHeader';
@@ -43,6 +45,7 @@ function Payment() {
   const palette = Colors[scheme];
   const router = useRouter();
   const params = useLocalSearchParams<{
+    bookingId?: string;
     teacherId?: string;
     teacherName?: string;
     teacherPrice?: string;
@@ -60,19 +63,26 @@ function Payment() {
   const total = params.total ?? '0.00';
   const dateText = formatSummaryDate(params.date);
 
-  const submitPayment = (_values: PaymentFormValues) => {
-    // Backend/Stripe integration will live here.
-    router.replace({
-      pathname: '/booking-success',
-      params: {
-        teacherName: params.teacherName ?? '',
-        date: dateText,
-        timeSlot: params.timeSlot ?? '',
-        duration: params.duration ?? '',
-        subject: params.subject ?? '',
-        total,
-      },
-    });
+  const submitPayment = async (_values: PaymentFormValues, helpers: { setSubmitting: (v: boolean) => void }) => {
+    try {
+      if (params.bookingId) {
+        await BookingsService.confirm(params.bookingId);
+      }
+      router.replace({
+        pathname: '/booking-success',
+        params: {
+          teacherName: params.teacherName ?? '',
+          date: dateText,
+          timeSlot: params.timeSlot ?? '',
+          duration: params.duration ?? '',
+          subject: params.subject ?? '',
+          total,
+        },
+      });
+    } catch (err) {
+      Alert.alert('Payment failed', getApiErrorMessage(err));
+      helpers.setSubmitting(false);
+    }
   };
 
   return (

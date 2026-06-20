@@ -38,9 +38,17 @@ interface Session {
   category: SessionCategory;
   isToday?: boolean;
   amount?: number;
+  rawDate?: string;
 }
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+// Parse only the calendar date (YYYY-MM-DD) as local midnight so timezone
+// offsets never shift the displayed day or weekday.
+function parseDateOnly(isoString: string): Date {
+  const [year, month, day] = isoString.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 
 function sameDay(a: Date, b: Date): boolean {
   return (
@@ -71,7 +79,7 @@ function mapBookingToSession(b: Booking, role: UserRole): Session | null {
       : b.status === 'pending'
         ? 'pending_payment'
         : 'upcoming';
-  const date = new Date(b.date);
+  const date = parseDateOnly(b.date);
   const counterpartName =
     role === UserRole.STUDENT
       ? bookingPartyName(b.teacherId)
@@ -88,6 +96,7 @@ function mapBookingToSession(b: Booking, role: UserRole): Session | null {
     category,
     isToday: sameDay(date, new Date()),
     amount: category === 'pending_payment' ? b.totalAmount : undefined,
+    rawDate: b.date,
   };
 }
 
@@ -140,6 +149,21 @@ function Schedule() {
         counterpartName: session.counterpartName,
         subject: session.subject,
         userId: userName || `${role}-${session.id}`,
+      },
+    });
+  };
+
+  const payForSession = (session: Session) => {
+    router.push({
+      pathname: '/payment',
+      params: {
+        bookingId: session.id,
+        teacherName: session.counterpartName,
+        date: session.rawDate ?? '',
+        timeSlot: session.time,
+        duration: session.duration.replace(' min', ''),
+        subject: session.subject,
+        total: session.amount?.toFixed(2) ?? '0.00',
       },
     });
   };
@@ -264,6 +288,7 @@ function Schedule() {
             palette={palette}
             scheme={scheme}
             onJoin={() => joinSession(item)}
+            onPay={() => payForSession(item)}
           />
         )}
       />
@@ -277,12 +302,14 @@ function SessionRow({
   palette,
   scheme,
   onJoin,
+  onPay,
 }: {
   session: Session;
   counterpartLabel: string;
   palette: typeof Colors.light;
   scheme: 'light' | 'dark';
   onJoin: () => void;
+  onPay: () => void;
 }) {
   const isCompleted = session.category === 'completed';
   const isPending = session.category === 'pending_payment';
@@ -396,21 +423,15 @@ function SessionRow({
               title="Pay Now"
               size="sm"
               fullWidth={false}
-              onPress={() => {}}
+              onPress={onPay}
             />
           </View>
         ) : (
           <BaseButton
-            title={
-              session.isToday
-                ? 'Join Session'
-                : isCompleted
-                  ? 'View Summary'
-                  : 'View Details'
-            }
+            title={isCompleted ? 'View Summary' : 'Join Session'}
             size="sm"
-            variant={session.isToday ? 'primary' : 'outline'}
-            onPress={session.isToday ? onJoin : () => {}}
+            variant={!isCompleted ? 'primary' : 'outline'}
+            onPress={!isCompleted ? onJoin : () => {}}
             containerStyle={styles.joinBtn}
           />
         )}
